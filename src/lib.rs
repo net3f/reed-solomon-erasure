@@ -35,6 +35,7 @@ mod matrix;
 mod tests;
 
 pub mod galois_16;
+pub mod galois_16_g2p;
 pub mod galois_8;
 
 pub use crate::errors::Error;
