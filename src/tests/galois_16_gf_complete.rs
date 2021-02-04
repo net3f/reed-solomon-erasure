@@ -1,5 +1,5 @@
 use super::{fill_random, option_shards_into_shards, shards_into_option_shards};
-use crate::galois_16_g2p::{GF2p16, ReedSolomon};
+use crate::galois_16_gf_complete::{ReedSolomon, init_gf_c_field};
 
 macro_rules! make_random_shards {
     ($per_shard:expr, $size:expr) => {{
@@ -18,7 +18,9 @@ macro_rules! make_random_shards {
 
 #[test]
 fn correct_field_order_restriction() {
+    
     const ORDER: usize = 1 << 16;
+    init_gf_c_field();
 
     assert!(ReedSolomon::new(ORDER, 1).is_err());
     assert!(ReedSolomon::new(1, ORDER).is_err());
@@ -33,6 +35,7 @@ quickcheck! {
                                            parity: usize,
                                            corrupt: usize,
                                            size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -108,6 +111,7 @@ quickcheck! {
                                                   parity: usize,
                                                   corrupt: usize,
                                                   size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -157,6 +161,7 @@ quickcheck! {
                  parity: usize,
                  corrupt: usize,
                  size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -220,6 +225,7 @@ quickcheck! {
                         parity: usize,
                         corrupt: usize,
                         size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -267,6 +273,7 @@ quickcheck! {
     fn qc_encode_sep_same_as_encode(data: usize,
                                     parity: usize,
                                     size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -309,6 +316,7 @@ quickcheck! {
     fn qc_encode_sep_same_as_encode_shards(data: usize,
                                            parity: usize,
                                            size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -340,6 +348,7 @@ quickcheck! {
     fn qc_encode_single_same_as_encode(data: usize,
                                        parity: usize,
                                        size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -379,6 +388,7 @@ quickcheck! {
     fn qc_encode_single_same_as_encode_shards(data: usize,
                                               parity: usize,
                                               size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -408,6 +418,7 @@ quickcheck! {
     fn qc_encode_single_sep_same_as_encode(data: usize,
                                            parity: usize,
                                            size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
@@ -452,6 +463,7 @@ quickcheck! {
     fn qc_encode_single_sep_same_as_encode_shards(data: usize,
                                                   parity: usize,
                                                   size: usize) -> bool {
+        init_gf_c_field();
         let data = 1 + data % 255;
         let mut parity = 1 + parity % 255;
         if data + parity > 256 {
