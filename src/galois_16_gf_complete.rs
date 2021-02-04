@@ -19,7 +19,25 @@ const EXTENSION_DEGREE: i32 = 16;
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct Field;
 
-static mut GF2_to_16 : Option<gf_t> = None;
+
+#[macro_use]
+extern crate lazy_static;
+
+use std::collections::HashMap;
+
+lazy_static! {
+    static mut GF2_to_16 : Option<gf_t> = {
+	unsafe {
+	    let mut gf: gf_t = { mem::zeroed() };
+	    gf_init_easy(&mut gf, EXTENSION_DEGREE);
+	    Some(gf)
+	}
+    };
+}
+
+
+
+    
 //                                         divide: None,
 //                                         inverse: None,
 //                                         multiply_region: None,
@@ -28,12 +46,12 @@ static mut GF2_to_16 : Option<gf_t> = None;
 // };
 
 pub fn init_gf_c_field() {
-    unsafe{
-        let mut gf: gf_t = { mem::zeroed() };
-        gf_init_easy(&mut gf, EXTENSION_DEGREE);
+    // unsafe{
+    //     let mut gf: gf_t = { mem::zeroed() };
+    //     gf_init_easy(&mut gf, EXTENSION_DEGREE);
 
-        GF2_to_16 = Some(gf);
-    }
+    //     GF2_to_16 = Some(gf);
+    // }
 }
 
 impl crate::Field for Field {
