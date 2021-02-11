@@ -9,6 +9,10 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 use std::mem;
 use std::ops::{Add, Div, Mul, Sub};
 use std::convert::TryInto;
+
+#[cfg(feature = "simd-accel")]
+use libc::c_void;
+
 use crate::Field as FieldTrait;
 
 /// An element of `GF(2^16)`.
@@ -68,6 +72,37 @@ impl crate::Field for Field {
     fn nth_internal(n: usize) -> u16 {
         n.try_into().unwrap() //TODO: this should be mod the field poly
     }
+
+    #[cfg(feature = "simd-accel")]    
+    fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
+        mul_slice(c, input, out)
+    }
+}
+
+#[cfg(feature = "simd-accel")]
+pub fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
+    unsafe {
+        let input_ptr : *mut c_void = &mut input[0] as *mut c_void;
+        let out_ptr : *mut c_void = &mut out[0] as *mut c_void;
+ 
+        GF2_to_16.unwrap().multiply_region.w32.unwrap()(&mut GF2_to_16.unwrap(), input_ptr.into(), out_ptr.into(), c.into(), input.len().into(), 0)            
+    }
+
+    // gf.multiply_region.w32(&gf, r1, r2, a, 16, 0);
+    
+    // let low: *const u8 = &MUL_TABLE_LOW[c as usize][0];
+    // let high: *const u8 = &MUL_TABLE_HIGH[c as usize][0];
+
+    // assert_eq!(input.len(), out.len());
+
+    // let input_ptr: *const u8 = &input[0];
+    // let out_ptr: *mut u8 = &mut out[0];
+    // let size: libc::size_t = input.len();
+
+    // let bytes_done: usize =
+    //     unsafe { reedsolomon_gal_mul(low, high, input_ptr, out_ptr, size) as usize };
+
+    // mul_slice_pure_rust(c, &input[bytes_done..], &mut out[bytes_done..]);
 }
 
 /// Type alias of ReedSolomon over GF(2^16).
