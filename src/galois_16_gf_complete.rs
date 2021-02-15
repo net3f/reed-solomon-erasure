@@ -82,10 +82,11 @@ impl crate::Field for Field {
 #[cfg(feature = "simd-accel")]
 pub fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
     unsafe {
-        let input_ptr : *mut c_void = &mut input[0] as *mut c_void;
-        let out_ptr : *mut c_void = &mut out[0] as *mut c_void;
+        let input_ptr : *mut c_void = &input[0] as *const _ as *const c_void as *mut c_void;
+        //let input_ptr : *const c_void = &input[0] as *const _ as *const c_void;
+        let out_ptr : *mut c_void = &mut out[0] as *mut _ as *mut c_void;
  
-        GF2_to_16.unwrap().multiply_region.w32.unwrap()(&mut GF2_to_16.unwrap(), input_ptr.into(), out_ptr.into(), c.into(), input.len().into(), 0)            
+        GF2_to_16.unwrap().multiply_region.w32.unwrap()(&mut GF2_to_16.unwrap(), input_ptr.into(), out_ptr.into(), c.into(), (input.len() * 2) as i32, 0)            
     }
 
     // gf.multiply_region.w32(&gf, r1, r2, a, 16, 0);

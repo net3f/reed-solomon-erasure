@@ -3,13 +3,15 @@
 use super::{galois_8, Error, SBSError};
 use rand::{self, thread_rng, Rng};
 
-// mod galois_16;
-// mod galois_16_g2p;
-// mod galois_16_gf_complete;
+mod galois_16;
+mod galois_16_g2p;
+mod galois_16_gf_complete;
 
 type ReedSolomon = crate::ReedSolomon<galois_8::Field>;
 type ShardByShard<'a> = crate::ShardByShard<'a, galois_8::Field>;
 
+const Minimum_data : usize = 300;
+const Minimum_parity : usize = 600;
 macro_rules! make_random_shards {
     ($per_shard:expr, $size:expr) => {{
         let mut shards = Vec::with_capacity(20);

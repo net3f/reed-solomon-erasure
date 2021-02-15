@@ -1,4 +1,4 @@
-use super::{fill_random, option_shards_into_shards, shards_into_option_shards};
+use super::{fill_random, option_shards_into_shards, shards_into_option_shards, Minimum_data, Minimum_parity};
 use crate::galois_16_gf_complete::{ReedSolomon, init_gf_c_field};
 
 macro_rules! make_random_shards {
@@ -36,10 +36,13 @@ quickcheck! {
                                            corrupt: usize,
                                            size: usize) -> bool {
         init_gf_c_field();
-        let data = 1 + data % 255;
-        let mut parity = 1 + parity % 255;
-        if data + parity > 256 {
-            parity -= data + parity - 256;
+        let data = 1 + data + 500 % 65535;
+        let mut parity = 1 + parity + 500 % 65535;
+        if (data + parity) % 2 != 0 {
+            parity+=1;
+        }
+        if data + parity > 65536 {
+            parity -= data + parity - 65536;
         }
 
         let corrupt = corrupt % (parity + 1);
@@ -112,10 +115,15 @@ quickcheck! {
                                                   corrupt: usize,
                                                   size: usize) -> bool {
         init_gf_c_field();
-        let data = 1 + data % 255;
-        let mut parity = 1 + parity % 255;
-        if data + parity > 256 {
-            parity -= data + parity - 256;
+        let data = (1 + data + Minimum_data)  % 65535;
+        let mut parity = (1 + parity + Minimum_parity) % 65535;
+        println!("{ } { }", data ,parity);
+        if (data + parity) % 2 != 0 {
+            parity+=1;
+        }
+        println!("{ }", data + parity);
+        if data + parity > 65536 {
+            parity -= data + parity - 65536;
         }
 
         let corrupt = corrupt % (parity + 1);

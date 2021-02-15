@@ -1,4 +1,4 @@
-use super::{fill_random, option_shards_into_shards, shards_into_option_shards};
+use super::{fill_random, option_shards_into_shards, shards_into_option_shards, Minimum_data, Minimum_parity};
 use crate::galois_16_g2p::{GF2p16, ReedSolomon};
 
 macro_rules! make_random_shards {
@@ -33,10 +33,10 @@ quickcheck! {
                                            parity: usize,
                                            corrupt: usize,
                                            size: usize) -> bool {
-        let data = 1 + data % 255;
-        let mut parity = 1 + parity % 255;
-        if data + parity > 256 {
-            parity -= data + parity - 256;
+        let data = 1 + data % 65535;
+        let mut parity = 1 + parity % 65535;
+        if data + parity > 65536 {
+            parity -= data + parity - 65536;
         }
 
         let corrupt = corrupt % (parity + 1);
@@ -108,10 +108,15 @@ quickcheck! {
                                                   parity: usize,
                                                   corrupt: usize,
                                                   size: usize) -> bool {
-        let data = 1 + data % 255;
-        let mut parity = 1 + parity % 255;
-        if data + parity > 256 {
-            parity -= data + parity - 256;
+        let data = (1 + data + Minimum_data)  % 65535;
+        let mut parity = (1 + parity + Minimum_parity) % 65535;
+        println!("{ } { }", data ,parity);
+        if (data + parity) % 2 != 0 {
+            parity+=1;
+        }
+        println!("{ }", data + parity);
+        if data + parity > 65536 {
+            parity -= data + parity - 65536;
         }
 
         let corrupt = corrupt % (parity + 1);
