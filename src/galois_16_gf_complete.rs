@@ -31,10 +31,16 @@ static mut GF2_to_16 : Option<gf_t> = None;
 //                                         scratch: None
 // };
 
+#[cfg(feature = "simd-accel")]
 pub fn init_gf_c_field() {
+
     unsafe{
         let mut gf: gf_t = { mem::zeroed() };
-        gf_init_easy(&mut gf, EXTENSION_DEGREE);
+        let null_ptr: *mut c_void = ::std::ptr::null::<c_void>() as *mut c_void;
+        let null_gf_ptr: *mut gf_t = ::std::ptr::null::<gf_t>() as *mut gf_t;
+        gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_SPLIT_TABLE as i32, GF_REGION_ALTMAP as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 16, 4, null_gf_ptr, null_ptr );
+        //gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_DEFAULT as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 0, 0, null_gf_ptr, null_ptr );
+        //gf_init_easy(&mut gf, EXTENSION_DEGREE);
 
         GF2_to_16 = Some(gf);
     }
@@ -73,10 +79,16 @@ impl crate::Field for Field {
         n.try_into().unwrap() //TODO: this should be mod the field poly
     }
 
-    #[cfg(feature = "simd-accel")]    
-    fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
-        mul_slice(c, input, out)
-    }
+    // #[cfg(feature = "simd-accel")]    
+    // fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
+    //     mul_slice(c, input, out)
+    // }
+
+    // #[cfg(feature = "simd-accel")]    
+    // fn mul_slice_add(c: u16, input: &[u16], out: &mut [u16]) {
+    //     mul_slice_xor(c, input, out)
+    // }
+
 }
 
 #[cfg(feature = "simd-accel")]
@@ -106,6 +118,17 @@ pub fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
     // mul_slice_pure_rust(c, &input[bytes_done..], &mut out[bytes_done..]);
 }
 
+#[cfg(feature = "simd-accel")]
+pub fn mul_slice_xor(c: u16, input: &[u16], out: &mut [u16]) {
+    unsafe {
+        let input_ptr : *mut c_void = &input[0] as *const _ as *const c_void as *mut c_void;
+        //let input_ptr : *const c_void = &input[0] as *const _ as *const c_void;
+        let out_ptr : *mut c_void = &mut out[0] as *mut _ as *mut c_void;
+ 
+        GF2_to_16.unwrap().multiply_region.w32.unwrap()(&mut GF2_to_16.unwrap(), input_ptr.into(), out_ptr.into(), c.into(), (input.len() * 2) as i32, 1)            
+    }
+}
+            
 /// Type alias of ReedSolomon over GF(2^16).
 pub type ReedSolomon = crate::ReedSolomon<Field>;
 
