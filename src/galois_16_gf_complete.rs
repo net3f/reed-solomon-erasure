@@ -38,9 +38,20 @@ pub fn init_gf_c_field() {
         let mut gf: gf_t = { mem::zeroed() };
         let null_ptr: *mut c_void = ::std::ptr::null::<c_void>() as *mut c_void;
         let null_gf_ptr: *mut gf_t = ::std::ptr::null::<gf_t>() as *mut gf_t;
-        gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_SPLIT_TABLE as i32, GF_REGION_ALTMAP as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 16, 4, null_gf_ptr, null_ptr );
+        gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_ALTMAP as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 16, 4, null_gf_ptr, null_ptr );
         //gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_DEFAULT as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 0, 0, null_gf_ptr, null_ptr );
         //gf_init_easy(&mut gf, EXTENSION_DEGREE);
+
+        GF2_to_16 = Some(gf);
+    }
+}
+
+#[cfg(not(feature = "simd-accel"))]
+pub fn init_gf_c_field() {
+
+    unsafe{
+        let mut gf: gf_t = { mem::zeroed() };
+        gf_init_easy(&mut gf, EXTENSION_DEGREE);
 
         GF2_to_16 = Some(gf);
     }
