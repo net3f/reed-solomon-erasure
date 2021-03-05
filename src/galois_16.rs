@@ -12,6 +12,7 @@ use std::ops::{Add, Div, Mul, Sub};
 //
 // hopefully it is a fast polynomial
 const EXT_POLY: [u8; 3] = [1, 2, 128];
+//const EXT_POLY: [u8; 3] = [1, 8, 1];
 
 /// The field GF(2^16).
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
@@ -101,6 +102,10 @@ impl Element {
             // c*x^(i+j)  = a*x^i*b*x^j
             x[1] ^= galois_8::mul(EXT_POLY[1], x[0]);
             x[2] ^= galois_8::mul(EXT_POLY[2], x[0]);
+            //replacing above by a simple xor because we have coefficient 1
+            //EXT_POLY[2]            
+            //x[2] ^= x[0];
+
         }
 
         Element([x[1], x[2]])
@@ -397,6 +402,27 @@ mod tests {
         fn qc_exp_zero_is_one(a: Element) -> bool {
             a.exp(0) == Element::constant(1)
         }
+    }
+
+    #[test]
+    fn lots_of_mul() {
+        use rand::Rng;
+
+        let mut rng = rand::thread_rng();
+
+        let mut a: Element = Element([rng.gen(),rng.gen()]);
+        let mut b: Element = Element([rng.gen(),rng.gen()]);
+        let mut c: Element = Element([0,0]);
+
+        const number_of_mul: u32 = 1000000000;
+
+        for x in 0..number_of_mul {
+            c = a * b;
+            a = b;
+            b = c;
+        }
+        println!("{:?}", c.0)
+
     }
 
     #[test]

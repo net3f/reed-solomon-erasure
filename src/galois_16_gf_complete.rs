@@ -32,15 +32,38 @@ static mut GF2_to_16 : Option<gf_t> = None;
 // };
 
 #[cfg(feature = "simd-accel")]
+//TODO: replace with lazy initialization
 pub fn init_gf_c_field() {
 
     unsafe{
         let mut gf: gf_t = { mem::zeroed() };
         let null_ptr: *mut c_void = ::std::ptr::null::<c_void>() as *mut c_void;
         let null_gf_ptr: *mut gf_t = ::std::ptr::null::<gf_t>() as *mut gf_t;
-        gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_ALTMAP as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 16, 4, null_gf_ptr, null_ptr );
-        //gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_DEFAULT as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 0, 0, null_gf_ptr, null_ptr );
-        //gf_init_easy(&mut gf, EXTENSION_DEGREE);
+        // extern int gf_init_hard(GFP gf, 
+        //                 int w, 
+        //                 int mult_type, 
+        //                 int region_type, 
+        //                 int divide_type, 
+        //                 uint64_t prim_poly,
+        //                 int arg1, 
+        //                 int arg2,
+        //                 GFP base_gf,
+        //                 void *scratch_memory);
+
+        //let init_result =  gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_SPLIT_TABLE as i32, GF_REGION_DEFAULT as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 16, 4, null_gf_ptr, null_ptr );
+        
+        //gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_SPLIT_TABLE as i32, GF_REGION_ALTMAP as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  8, 8, 8, null_gf_ptr, null_ptr );
+        
+        let init_result = gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_DEFAULT as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0x1002d, 0, 0, null_gf_ptr, null_ptr );
+
+        //let init_result = gf_init_hard(&mut gf, 16, gf_mult_type_t_GF_MULT_CARRY_FREE as i32, GF_REGION_DEFAULT as i32, gf_division_type_t_GF_DIVIDE_DEFAULT as i32,  0, 0, 0, null_gf_ptr, null_ptr );
+
+        //let init_result = gf_init_easy(&mut gf, EXTENSION_DEGREE);
+        if init_result == 0 {   println!("GF Complete Error:");
+            gf_error();
+                                                                                                                                                                                            panic!("gf complete init failed");
+        }
+
 
         GF2_to_16 = Some(gf);
     }
@@ -90,15 +113,15 @@ impl crate::Field for Field {
         n.try_into().unwrap() //TODO: this should be mod the field poly
     }
 
-    // #[cfg(feature = "simd-accel")]    
-    // fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
-    //     mul_slice(c, input, out)
-    // }
+    #[cfg(feature = "simd-accel")]    
+    fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
+        mul_slice(c, input, out)
+    }
 
-    // #[cfg(feature = "simd-accel")]    
-    // fn mul_slice_add(c: u16, input: &[u16], out: &mut [u16]) {
-    //     mul_slice_xor(c, input, out)
-    // }
+    #[cfg(feature = "simd-accel")]    
+    fn mul_slice_add(c: u16, input: &[u16], out: &mut [u16]) {
+        mul_slice_xor(c, input, out)
+    }
 
 }
 
@@ -111,27 +134,12 @@ pub fn mul_slice(c: u16, input: &[u16], out: &mut [u16]) {
  
         GF2_to_16.unwrap().multiply_region.w32.unwrap()(&mut GF2_to_16.unwrap(), input_ptr.into(), out_ptr.into(), c.into(), (input.len() * 2) as i32, 0)            
     }
-
-    // gf.multiply_region.w32(&gf, r1, r2, a, 16, 0);
-    
-    // let low: *const u8 = &MUL_TABLE_LOW[c as usize][0];
-    // let high: *const u8 = &MUL_TABLE_HIGH[c as usize][0];
-
-    // assert_eq!(input.len(), out.len());
-
-    // let input_ptr: *const u8 = &input[0];
-    // let out_ptr: *mut u8 = &mut out[0];
-    // let size: libc::size_t = input.len();
-
-    // let bytes_done: usize =
-    //     unsafe { reedsolomon_gal_mul(low, high, input_ptr, out_ptr, size) as usize };
-
-    // mul_slice_pure_rust(c, &input[bytes_done..], &mut out[bytes_done..]);
 }
 
 #[cfg(feature = "simd-accel")]
 pub fn mul_slice_xor(c: u16, input: &[u16], out: &mut [u16]) {
     unsafe {
+        //println!("mul_slice_xor!");
         let input_ptr : *mut c_void = &input[0] as *const _ as *const c_void as *mut c_void;
         //let input_ptr : *const c_void = &input[0] as *const _ as *const c_void;
         let out_ptr : *mut c_void = &mut out[0] as *mut _ as *mut c_void;
@@ -160,14 +168,15 @@ pub fn sub(a: u16, b: u16) -> u16 {
 /// Multiply two elements.
 pub fn mul(a: u16, b: u16) -> u16 {
     unsafe {
+        //println!("a * b = {} * {}", a,b);
         GF2_to_16.unwrap().multiply.w32.unwrap()(&mut GF2_to_16.unwrap(), a.into(), b.into()).try_into().unwrap()
     }
 }
 
 /// Divide one element by another. `b`, the divisor, may not be 0.
 pub fn div(a: u16, b: u16) -> u16 {
-        unsafe {
-            GF2_to_16.unwrap().divide.w32.unwrap()(&mut GF2_to_16.unwrap(), a.into(), b.into()).try_into().unwrap()
+    unsafe {
+        GF2_to_16.unwrap().divide.w32.unwrap()(&mut GF2_to_16.unwrap(), a.into(), b.into()).try_into().unwrap()
         }
 }
 
@@ -275,6 +284,29 @@ mod tests {
     #[test]
     fn gf_complete_inti() {
         init_gf_c_field();
+    }
+
+    #[test]
+     fn lots_of_mul() {
+        use rand::Rng;
+
+        init_gf_c_field();
+
+        let mut rng = rand::thread_rng();
+
+        let mut a: u16 = rng.gen();
+        let mut b: u16 = rng.gen();
+        let mut c: u16 = 0;
+        let mut d: u16 = 0;
+
+        const number_of_mul: u32 = 1000000000;
+
+        for x in 0..number_of_mul {
+            c = mul(a, b);
+            a = b;
+            b = c;
+        }
+
     }
 
     #[test]

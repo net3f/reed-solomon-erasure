@@ -215,6 +215,54 @@ fn gf_complete_binding() {
         .expect("Couldn't write bindings!");
 }
 
+const G2P16_FIELD_SIZE: usize = 65536;
+
+const G2P16_GENERATING_POLYNOMIAL: usize = 0x002d;
+
+fn gen_g2p16_log_table(polynomial: usize) -> [u16; G2P16_FIELD_SIZE] {
+    let mut result: [u16; G2P16_FIELD_SIZE] = [0; G2P16_FIELD_SIZE];
+    let mut b: usize = 1;
+
+    for log in 0..G2P16_FIELD_SIZE - 1 {
+        result[b] = log as u16;
+
+        b = b << 1;
+
+        if G2P16_FIELD_SIZE <= b {
+            b = (b - G2P16_FIELD_SIZE) ^ polynomial;
+        }
+    }
+
+    result
+}
+
+const G2P16_EXP_TABLE_SIZE: usize = G2P16_FIELD_SIZE * 2 - 2;
+
+fn gen_g2p16_exp_table(log_table: &[u16; G2P16_FIELD_SIZE]) -> [u16; G2P16_EXP_TABLE_SIZE] {
+    let mut result: [u16; G2P16_EXP_TABLE_SIZE] = [0; G2P16_EXP_TABLE_SIZE];
+
+    for i in 1..G2P16_FIELD_SIZE {
+        let log = log_table[i] as usize;
+        result[log] = i as u16;
+        result[log + G2P16_FIELD_SIZE - 1] = i as u16;
+    }
+
+    result
+}
+
+fn write_g2p16_tables() {
+    let log_table = gen_g2p16_log_table(G2P16_GENERATING_POLYNOMIAL);
+    let exp_table = gen_g2p16_exp_table(&log_table);
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join("table_g2p16.rs");
+    let mut f = File::create(&dest_path).unwrap();
+
+    write_table!(1D => f, log_table,      "G2P16_LOG_TABLE",      "u16");
+    write_table!(1D => f, exp_table,      "G2P16_EXP_TABLE",      "u16");
+
+}
+
 #[cfg(not(all(
     feature = "simd-accel",
     any(target_arch = "x86_64", target_arch = "aarch64"),
@@ -227,4 +275,5 @@ fn main() {
     compile_simd_c();
     gf_complete_binding();
     write_tables();
+    write_g2p16_tables();
 }
